@@ -336,6 +336,27 @@ follow this exact shape. The two exceptions are instructive:
 > **Pragmatism rule:** the layered structure is a tool for managing complexity,
 > not a tax to pay on every screen. Scale the ceremony to the complexity.
 
+### 5.1 Feature boundaries are contracts, not suggestions
+
+A feature is a module with a *public surface* and *private internals*. One
+feature may depend on another, but **only through approved contracts**:
+
+- a **shared domain abstraction** (an entity or repository/gateway interface
+  promoted to a shared location both features depend on);
+- a **core port** (when the dependency is really on infrastructure, not the
+  other feature);
+- **navigation arguments** (pass data forward through the route, not by reaching
+  into the other feature's controller);
+- an explicitly **exported public contract** of the feature.
+
+What a feature must **never** do is reach into another feature's *private*
+`presentation/`, `controllers/`, or `widgets/` internals — that silently fuses
+two slices into one and destroys the "understand/test/delete in one folder"
+property. If two features need to share UI or logic, that shared thing is no
+longer feature-private: lift it into the design system, `core/`, or a shared
+domain module. (This is the boundary the cross-feature import lint in §22.1
+enforces.)
+
 ---
 
 ## 6. The Data Layer: Repositories, Gateways, Mappers
@@ -517,10 +538,12 @@ The presentation layer is split into four collaborating roles.
 
 ### 8.1 A base controller does the heavy lifting
 
-Every feature controller extends a shared `BaseController` that centralizes the
-three things every screen needs: **scoped loading state**, **safe async
-execution**, and **session/navigation access**. This eliminates a huge amount of
-boilerplate and makes error/loading behavior uniform across the app.
+Every feature controller extends a shared `BaseController` — but keep it
+**intentionally boring**. It owns only cross-cutting controller *mechanics*:
+**scoped loading state**, **safe async execution** (`runSafe`), **lifecycle
+hooks**, and *optional* shared-state access. That is the whole job. It removes
+boilerplate and makes loading/error behavior uniform — without becoming a back
+door to global services.
 
 ```dart
 class BaseController<T extends SharedState> extends GetxController {
@@ -558,6 +581,15 @@ The **tag-based loading** model is worth highlighting: instead of a single
 A screen can show three independent spinners (e.g. "submitting", "loading more",
 "refreshing") from one controller without them clobbering each other.
 
+> **Resist the god-object.** A base controller is a magnet for "just one more
+> convenient accessor." Do **not** bake `navigator`, `globalState`, or arbitrary
+> services into it. Inherited conveniences blur module boundaries and make every
+> controller *look* like it depends on everything — which makes them harder to
+> read and to test. A controller that never navigates should not inherit a
+> navigator; one that doesn't touch global state should not see it. Put session
+> access on the base only if it is genuinely near-universal in your app;
+> otherwise inject that too.
+
 A feature controller then becomes refreshingly small — it composes use cases and
 exposes intent methods:
 
@@ -576,6 +608,30 @@ class ItemController extends BaseController<ItemSharedState> {
 }
 ```
 
+**Inject dependencies through the constructor — always.** Feature controllers
+receive their repositories, use cases, and services as constructor parameters
+(as `ItemController` receives `FetchItemsUseCase` above). The service locator
+(`Get.find()`) belongs in *bindings* (§10.2), **never inside a controller**.
+This keeps controllers plain Dart objects: trivial to construct in a test with
+fakes, and honest about exactly which collaborators — and therefore which module
+boundaries — they depend on.
+
+**Inject `AppNavigator` only where navigation actually happens.** Navigation is
+a dependency like any other. A controller that needs to navigate declares it
+explicitly — `ItemController(this._fetchItems, this._navigator)` — and a
+controller that never navigates should not know navigation exists. This is
+exactly why the navigator is *not* on the boring base. (Keep `AppNavigator` for
+the cases that warrant it: tab-scoped nested navigation and testable route
+behavior — see §16.3.)
+
+**Navigate from the controller only when the destination depends on logic.**
+Simple, unconditional, user-initiated navigation ("tap row → open detail") can
+live in the **view** — it needs no controller round-trip. Reserve
+controller-driven navigation for flows where *where you go next depends on
+state*: validation results, permission outcomes, async success/failure, or a
+business decision. That keeps views free of business branching and controllers
+free of pointless navigation plumbing.
+
 ### 8.2 Specialized base controllers for recurring shapes
 
 When a *pattern* of screen recurs — say, "search box + paginated results +
@@ -585,6 +641,19 @@ implements debouncing, pagination (`loadMore`), pull-to-refresh, and persisted
 search history once, so every search screen gets it for free by overriding two
 methods (`onSearch` and `initialSearchBehavior`). Look for these repeated shapes
 and factor them up.
+
+This kind of base is **behavior-specific and cohesive**, which is exactly when
+inheritance earns its keep (unlike the general base, which stays boring). But its
+concurrency makes it **test-critical** — write focused tests for:
+
+- `safeSearch`, `loadMore`, and `clearSearch` happy paths;
+- **debounce timing** (rapid keystrokes collapse to one query);
+- **empty-result pagination** (no further `loadMore` after an empty page);
+- **search-history persistence** (saved, de-duplicated, capped, restored);
+- **stale-response ordering** — the one teams miss: if an *older* search resolves
+  *after* a newer one, the newer results must win. If the base doesn't already
+  guard this (e.g. by stamping each request with a sequence/token and discarding
+  out-of-order responses), that is a **bug to fix**, not merely a test to write.
 
 ### 8.3 Shared state: per-feature, resettable
 
@@ -1083,6 +1152,37 @@ Principles:
   Material's `ThemeData` in the root widget, so even default widgets inherit the
   system.
 
+### 15.1 Foundation widgets vs. semantic wrappers
+
+This is the distinction that actually stops literal leakage. Keep two tiers:
+
+- **Foundation widgets expose low-level flexibility.** A base
+  `XxRoundedContainer` accepts whatever color, border, radius, and padding you
+  pass — it is the flexible primitive, and it should stay that way.
+- **Semantic wrappers encode repeated product *intent*.** When the same
+  combination of literals recurs *with a meaning*, name it once and let feature
+  code use the name instead of the raw knobs:
+  `XxSurface`, `XxOutlinedSurface`, `XxErrorNotice`, plus named radius
+  (`XxRadius.card`) and spacing (`XxGap.section`) variants.
+
+```dart
+// ❌ literal leakage repeated across features
+XxRoundedContainer(color: AppColors.surface, borderRadius: 12,
+    border: Border.all(color: AppColors.outline), padding: EdgeInsets.all(16), child: …)
+
+// ✅ the recurring meaning, named once
+XxOutlinedSurface(child: …)
+```
+
+> **The test for adding a wrapper is *recurring meaning*, not visual novelty.**
+> If a style appears once, pass literals to the foundation widget. If it appears
+> across screens and *stands for something* ("this is a surface", "this is an
+> error notice"), promote it to a semantic wrapper. Resist a zoo of look-alike
+> aliases that carry no distinct intent — that is just literals with longer
+> names. The review smell to catch: feature widgets repeatedly passing arbitrary
+> `Color` / `Border` / `BorderRadius` / `BoxDecoration` into the foundation
+> container — that is a missing semantic wrapper.
+
 The payoff: a feature screen is assembled almost entirely from design-system
 components, so visual changes are made once, centrally, and propagate everywhere.
 
@@ -1164,6 +1264,28 @@ implementations. This buys two things:
   nested navigator id, so "go to detail" pushes within the active tab's stack,
   enabling independent per-tab back stacks in a bottom-nav shell.
 
+### 16.4 Route ownership in a tab shell
+
+Per-tab nested navigation only works if **every route maps to exactly one owning
+tab** — otherwise a deep link or a controller-driven push lands in the wrong
+stack (or nowhere). Make that mapping explicit and *total*:
+
+- **Declare ownership by prefix.** Each tab owns a set of route prefixes — reuse
+  the feature `_prefix` constants from §16.1 (e.g. tab 0 owns `/home` + `/item`,
+  tab 1 owns `/search`, tab 2 owns `/profile`). Keep this table in one place, not
+  scattered across `if` checks.
+- **Resolve the owner deterministically.** A single `resolveOwningTab(route)`
+  function maps a route name to its tab id. Treat it as critical infrastructure
+  and **test it against every registered route** (iterate `AppRouter.routes`), so
+  a newly added screen can't silently have no owner.
+- **Fail loud on gaps and ambiguity.** A route matching *no* prefix — or *more
+  than one* — is a configuration error: assert/throw in debug and report it,
+  rather than defaulting to tab 0. Ambiguous prefixes (`/item` vs `/items`) are
+  the classic trap; prefer **exact path-segment matching** over `startsWith`.
+- **Guard additions in CI.** A test that fails when a registered route is
+  unassigned (or doubly assigned) turns "someone forgot to map the new screen"
+  into a red build instead of a production mis-navigation.
+
 ---
 
 ## 17. Adding a New Feature: A Step-by-Step Recipe
@@ -1231,6 +1353,8 @@ integration_test/                      # full-journey, on-device/emulator tests
 | **Error layer** | `safeExecute` routes to `onError` vs. funnel; status-code → message mapping. |
 | **Route guards** | Each middleware's allow/redirect decision for logged-in / expired / anonymous. |
 | **Shared state** | `reset()` actually clears every field (this is what protects logout). |
+| **Search base controller** | `safeSearch` / `loadMore` / `clearSearch`, debounce timing, empty-page pagination, history persistence, and **stale-response ordering** (newer query wins). |
+| **Route ownership** | `resolveOwningTab()` returns exactly one tab for **every** registered route; no unknown/ambiguous/unassigned routes (see §16.4). |
 
 ### 18.3 Controller tests with the DI container
 
@@ -1452,7 +1576,16 @@ when:
 - anything in `domain/` imports Flutter, `http`, the state-management package, or
   generated code;
 - a DTO type from `generated/` is referenced outside a `data/` layer;
-- a `presentation/` file imports another feature's `presentation/` internals.
+- a generated API client or DTO is referenced in a **presentation controller**;
+- a `presentation/` file imports another feature's `presentation/` internals;
+- a **feature controller** uses raw `Get.to*` / `Get.off*` instead of
+  `AppNavigator` (where controller-driven navigation is justified at all);
+- **`Get.find()` appears inside a controller or service** (the locator lives in
+  bindings, dependencies arrive by constructor);
+- a feature **widget** contains a raw `Color(0x…)` or a magic numeric spacing/
+  radius literal (use tokens or a semantic wrapper — §15.1);
+- a **`BuildContext` is stored as a field** on a controller, service, or shared
+  state.
 
 Also enforce metric thresholds (cyclomatic complexity, file length, number of
 parameters) so controllers and widgets can't quietly balloon.
@@ -1474,8 +1607,14 @@ A feature is "done" only when:
 - [ ] Use cases, mappers, repository (fake API), and `reset()` are unit-tested.
 - [ ] Key widget states (loading/empty/error, dark, RTL, large text) are tested.
 - [ ] New external boundaries are interfaces with injected implementations.
+- [ ] Controllers take dependencies via **constructor**; no `Get.find()` and no
+      generated DTOs inside a controller; `AppNavigator` injected only if it
+      navigates.
 - [ ] No raw `try/catch` in presentation; all async goes through `runSafe`.
-- [ ] Routes registered with binding + guards; no other feature was modified.
+- [ ] No literal colors/spacing in feature widgets; recurring intent uses a
+      semantic wrapper (§15.1).
+- [ ] Routes registered with binding + guards, assigned to an owning tab
+      (§16.4); no other feature's internals were imported or modified.
 - [ ] No new secrets, no unredacted PII logging, size diff within budget.
 
 ### 22.4 A PR checklist that references this guide
@@ -1499,8 +1638,9 @@ the team and codebase grow:
    boundary; the domain and presentation see only entities.
 4. **Every external boundary is an interface.** Repositories, gateways, ports,
    session, navigator — all abstract, all injected.
-5. **Controllers compose use cases; they don't do I/O.** No `http`, no DTOs, no
-   raw `try/catch` in presentation — use the base controller's `runSafe`.
+5. **Controllers stay plain.** Compose use cases via **constructor injection**;
+   no `Get.find()`, no DTOs, no `BuildContext`, no `http`, no raw `try/catch`
+   inside — use `runSafe`. Keep the base controller boring.
 6. **One feature = one folder = one route table = one binding.** Adding a
    feature should not require editing another feature.
 7. **DI lifetime is deliberate:** `permanent` for app-lifetime services/ports,
@@ -1523,6 +1663,16 @@ the team and codebase grow:
     size budget.
 15. **Boundaries are lint-enforced.** If a human has to remember the dependency
     rule, it will eventually be broken — make CI reject the violation.
+16. **Inject `AppNavigator` only where a controller navigates**, and navigate
+    from a controller only when the destination depends on logic — otherwise
+    navigation stays in the view.
+17. **Two design-system tiers:** flexible foundation widgets + semantic wrappers
+    for recurring *intent*. Promote on recurring meaning, not visual novelty.
+18. **Every route has exactly one owning tab.** `resolveOwningTab()` is total and
+    tested against all registered routes; unknown/ambiguous/unassigned fails loud.
+19. **Feature boundaries are contracts.** Cross-feature only via shared domain
+    abstractions, core ports, navigation arguments, or exported contracts — never
+    another feature's private internals.
 
 ---
 
