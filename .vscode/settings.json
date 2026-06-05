@@ -1,0 +1,18 @@
+{
+  "files.exclude": {
+    ".dart_tool": true,
+    ".flutter-plugins": true,
+    ".flutter-plugins-dependencies": true,
+    ".metadata": true,
+    // "analysis_options.yaml": true,
+    "devtools_options.yaml": true,
+    "pubspec.lock": true,
+    // "lib/generated/**": true
+  },
+  "dart.lineLength": 120,
+  "dart.flutterSdkPath": null,
+  "dart.previewFlutterUiGuides": true,
+  "dart.previewFlutterUiGuidesCustomTracking": true,
+  "dart.openDevTools": "never",
+  "dart.devToolsReuseWindows": true
+}
