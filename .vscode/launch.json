@@ -8,8 +8,8 @@
       "program": "lib/main.dart",
       "deviceId": "E29CEAF4-9178-4261-8C16-4B4994113446",
       "flutterMode": "debug",
-      "toolArgs": [
-        "--dart-define=MODEL_URL=https://github.com/alkndoom/offline-translator-models/releases/download/v1/model.gguf"
+      "args": [
+        "--dart-define=MODEL_MANIFEST_URL=https://raw.githubusercontent.com/alkndoom/offline-translator-models/refs/heads/main/model_manifest.json"
       ]
     },
     {
@@ -19,8 +19,8 @@
       "program": "lib/main.dart",
       "deviceId": "emulator-5554",
       "flutterMode": "debug",
-      "toolArgs": [
-        "--dart-define=MODEL_URL=https://github.com/alkndoom/offline-translator-models/releases/download/v1/model.gguf"
+      "args": [
+        "--dart-define=MODEL_MANIFEST_URL=https://raw.githubusercontent.com/alkndoom/offline-translator-models/refs/heads/main/model_manifest.json"
       ]
     }
   ]

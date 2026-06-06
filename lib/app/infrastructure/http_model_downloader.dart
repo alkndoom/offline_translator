@@ -1,9 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../core/ports/model_downloader.dart';
+
+typedef ModelDirectoryProvider = Future<Directory> Function();
+typedef ManifestFetcher = Future<String> Function(Uri uri);
 
 /// Downloads the GGUF model over HTTP(S) into the app documents directory on
 /// first run, streaming to a temporary `.part` file and renaming on success so
@@ -14,7 +18,11 @@ class HttpModelDownloader implements ModelDownloader {
     this.fileName = 'model.gguf',
     this.version = '',
     this.manifestUrl = '',
-  });
+    ModelDirectoryProvider? directoryProvider,
+    ManifestFetcher? manifestFetcher,
+  }) : _directoryProvider =
+           directoryProvider ?? getApplicationDocumentsDirectory,
+       _manifestFetcher = manifestFetcher ?? _defaultManifestFetcher;
 
   /// Direct download URL for the `.gguf` (use HTTPS — iOS ATS blocks cleartext).
   final String url;
@@ -27,8 +35,11 @@ class HttpModelDownloader implements ModelDownloader {
   /// cached model so the app can pick up model updates without an app rebuild.
   final String manifestUrl;
 
+  final ModelDirectoryProvider _directoryProvider;
+  final ManifestFetcher _manifestFetcher;
+
   Future<String> _targetPath() async {
-    final dir = await getApplicationDocumentsDirectory();
+    final dir = await _directoryProvider();
     return '${dir.path}/$fileName';
   }
 
@@ -100,31 +111,19 @@ class HttpModelDownloader implements ModelDownloader {
     if (manifestUrl.trim().isEmpty) return fallback;
 
     try {
-      final client = HttpClient();
-      try {
-        final response = await (await client.getUrl(
-          Uri.parse(manifestUrl),
-        )).close();
-        if (response.statusCode != HttpStatus.ok) {
-          throw StateError(
-            'Model manifest failed: HTTP ${response.statusCode}.',
-          );
-        }
-        final body = await utf8.decoder.bind(response).join();
-        final json = jsonDecode(body) as Map<String, dynamic>;
-        final manifestVersion = (json['version'] as String?)?.trim() ?? '';
-        if (manifestVersion.isEmpty) {
-          throw StateError('Model manifest is missing a non-empty version.');
-        }
-        final manifestModelUrl = (json['url'] as String?)?.trim() ?? '';
-        return _ModelDescriptor(
-          url: manifestModelUrl.isNotEmpty ? manifestModelUrl : fallback.url,
-          version: manifestVersion,
-        );
-      } finally {
-        client.close();
+      final body = await _manifestFetcher(Uri.parse(manifestUrl));
+      final json = jsonDecode(body) as Map<String, dynamic>;
+      final manifestVersion = (json['version'] as String?)?.trim() ?? '';
+      if (manifestVersion.isEmpty) {
+        throw StateError('Model manifest is missing a non-empty version.');
       }
-    } catch (_) {
+      final manifestModelUrl = (json['url'] as String?)?.trim() ?? '';
+      return _ModelDescriptor(
+        url: manifestModelUrl.isNotEmpty ? manifestModelUrl : fallback.url,
+        version: manifestVersion,
+      );
+    } catch (e) {
+      debugPrint('[HttpModelDownloader] Model manifest check failed: $e');
       return fallback;
     }
   }
@@ -148,6 +147,19 @@ class HttpModelDownloader implements ModelDownloader {
   Future<void> _writeMetadata(String modelPath, _ModelMetadata metadata) {
     final file = File('$modelPath.meta.json');
     return file.writeAsString(jsonEncode(metadata.toJson()));
+  }
+
+  static Future<String> _defaultManifestFetcher(Uri uri) async {
+    final client = HttpClient();
+    try {
+      final response = await (await client.getUrl(uri)).close();
+      if (response.statusCode != HttpStatus.ok) {
+        throw StateError('Model manifest failed: HTTP ${response.statusCode}.');
+      }
+      return utf8.decoder.bind(response).join();
+    } finally {
+      client.close();
+    }
   }
 }
 
