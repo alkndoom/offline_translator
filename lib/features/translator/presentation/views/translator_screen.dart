@@ -13,6 +13,8 @@ import '../widgets/mode_selector.dart';
 import '../widgets/model_error_view.dart';
 import '../widgets/model_loading_view.dart';
 import '../widgets/output_card.dart';
+import '../widgets/quick_phrases.dart';
+import '../widgets/scenario_selector.dart';
 
 /// The single translator screen. Gates the content behind the model's load
 /// status; holds no business logic.
@@ -75,6 +77,10 @@ class _TranslatorBody extends StatelessWidget {
           ActionButton(),
           SizedBox(height: AppDimensions.gapLg),
           OutputCard(),
+          SizedBox(height: AppDimensions.gapLg),
+          ScenarioSelector(),
+          SizedBox(height: AppDimensions.gapMd),
+          QuickPhrases(),
         ],
       ),
     );

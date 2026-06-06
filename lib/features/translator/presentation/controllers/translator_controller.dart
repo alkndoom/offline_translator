@@ -7,10 +7,14 @@ import '../../../../core/error/app_exception.dart';
 import '../../../../core/ports/llm_engine.dart';
 import '../../domain/entities/history_entry.dart';
 import '../../domain/entities/language.dart';
+import '../../domain/entities/phrase.dart';
+import '../../domain/entities/phrasebook_data.dart';
+import '../../domain/entities/scenario.dart';
 import '../../domain/entities/task_mode.dart';
 import '../../domain/gateways/speech_gateways.dart';
 import '../../domain/gateways/translator_gateway.dart';
 import '../../domain/repositories/history_repository.dart';
+import '../../domain/repositories/phrase_repository.dart';
 import 'translator_shared_state.dart';
 
 /// Presentation logic for the translator screen. Translation goes through the
@@ -22,6 +26,7 @@ class TranslatorController extends BaseController<TranslatorSharedState> {
   final SpeechRecognizer _speech;
   final TextToSpeech _tts;
   final HistoryRepository _historyRepo;
+  final PhraseRepository _phraseRepo;
 
   TranslatorController(
     super.state,
@@ -30,6 +35,7 @@ class TranslatorController extends BaseController<TranslatorSharedState> {
     this._speech,
     this._tts,
     this._historyRepo,
+    this._phraseRepo,
   );
 
   final inputController = TextEditingController();
@@ -40,6 +46,7 @@ class TranslatorController extends BaseController<TranslatorSharedState> {
     super.onInit();
     warmUpModel();
     loadHistory();
+    loadPhraseUsage();
   }
 
   /// Loads the model when the screen first opens (downloading it on first run),
@@ -92,6 +99,48 @@ class TranslatorController extends BaseController<TranslatorSharedState> {
     state.taskMode = mode;
     state.outputText = '';
   }
+
+  // --- Phrasebook / quick phrases --------------------------------------------
+
+  void selectScenario(Scenario scenario) => state.scenario = scenario;
+
+  /// Curated phrases for the active scenario, most-used first.
+  List<Phrase> get quickPhrases {
+    final usage = state.phraseUsage;
+    final phrases = kPhrasebook
+        .where((phrase) => phrase.scenario == state.scenario)
+        .toList();
+    phrases.sort((a, b) => (usage[b.id] ?? 0).compareTo(usage[a.id] ?? 0));
+    return phrases;
+  }
+
+  /// One-tap phrase translation without a model call.
+  Future<void> usePhrase(Phrase phrase) {
+    final source = phrase.inLanguage(state.sourceLang.name);
+    final target = phrase.inLanguage(state.targetLang.name);
+    inputController.text = source;
+    state.outputText = target;
+
+    final usage = Map<String, int>.from(state.phraseUsage);
+    usage[phrase.id] = (usage[phrase.id] ?? 0) + 1;
+    state.setPhraseUsage(usage);
+
+    return runSafe(
+      tag: 'phrase',
+      silent: true,
+      action: () async {
+        await _phraseRepo.save(usage);
+        await _addHistory(source, target);
+      },
+    );
+  }
+
+  Future<void> loadPhraseUsage() => runSafe(
+    tag: 'phraseUsage',
+    silent: true,
+    action: () async =>
+        state.setPhraseUsage(await _phraseRepo.getUsageCounts()),
+  );
 
   void setSourceLanguage(Language language) {
     state.sourceLang = language;

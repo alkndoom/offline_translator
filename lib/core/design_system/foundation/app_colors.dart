@@ -17,6 +17,12 @@ class AppColors {
   /// Faint primary tint for the output card.
   static const Color primaryTint = Color(0xFFF0EFFF);
 
+  /// Danger accent for emergency phrase surfaces.
+  static const Color error = Color(0xFFE53935);
+
+  /// Faint danger tint for emergency phrase surfaces.
+  static const Color errorTint = Color(0xFFFDECEA);
+
   static const Color onPrimary = Color(0xFFFFFFFF);
   static const Color onSurface = Color(0xFF1C1B29);
   static const Color onSurfaceMuted = Color(0xFF8A8896);

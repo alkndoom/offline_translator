@@ -5,9 +5,11 @@ import '../../data/gateways/device_speech_recognizer.dart';
 import '../../data/gateways/device_text_to_speech.dart';
 import '../../data/gateways/llm_translator_gateway.dart';
 import '../../data/repositories/prefs_history_repository.dart';
+import '../../data/repositories/prefs_phrase_repository.dart';
 import '../../domain/gateways/speech_gateways.dart';
 import '../../domain/gateways/translator_gateway.dart';
 import '../../domain/repositories/history_repository.dart';
+import '../../domain/repositories/phrase_repository.dart';
 import '../controllers/translator_controller.dart';
 import '../controllers/translator_shared_state.dart';
 
@@ -26,6 +28,7 @@ class TranslatorBinding implements Bindings {
     Get.lazyPut<SpeechRecognizer>(() => DeviceSpeechRecognizer(), fenix: true);
     Get.lazyPut<TextToSpeech>(() => DeviceTextToSpeech(), fenix: true);
     Get.lazyPut<HistoryRepository>(() => PrefsHistoryRepository(), fenix: true);
+    Get.lazyPut<PhraseRepository>(() => PrefsPhraseRepository(), fenix: true);
     Get.lazyPut(() => TranslatorSharedState(), fenix: true);
     Get.lazyPut(
       () => TranslatorController(
@@ -35,6 +38,7 @@ class TranslatorBinding implements Bindings {
         Get.find<SpeechRecognizer>(),
         Get.find<TextToSpeech>(),
         Get.find<HistoryRepository>(),
+        Get.find<PhraseRepository>(),
       ),
       fenix: true,
     );

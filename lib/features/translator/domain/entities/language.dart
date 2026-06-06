@@ -14,13 +14,9 @@ class Language {
   int get hashCode => Object.hash(name, localeTag);
 }
 
-/// Languages offered in the picker. The on-device model decides which pairs it
-/// actually handles well (currently English↔Turkish); broaden after retraining.
+/// Languages offered in the picker. Keep this aligned with the model's reliable
+/// training target.
 const kSupportedLanguages = <Language>[
   Language('English', 'en-US'),
   Language('Turkish', 'tr-TR'),
-  Language('German', 'de-DE'),
-  Language('French', 'fr-FR'),
-  Language('Spanish', 'es-ES'),
-  Language('Arabic', 'ar-SA'),
 ];
