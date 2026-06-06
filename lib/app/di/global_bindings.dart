@@ -16,11 +16,23 @@ class GlobalBindings extends Bindings {
   /// Leave empty to require a manually-installed model (adb push / Files).
   static const _modelUrl = String.fromEnvironment('MODEL_URL');
 
+  /// Optional remote JSON manifest:
+  ///   {"version":"v2","url":"https://example.com/model.gguf"}
+  /// When this version changes, the app replaces the cached model.
+  static const _modelManifestUrl = String.fromEnvironment('MODEL_MANIFEST_URL');
+
+  /// Optional build-time version fallback if no manifest is used.
+  static const _modelVersion = String.fromEnvironment('MODEL_VERSION');
+
   @override
   void dependencies() {
     if (!Get.isRegistered<ModelDownloader>()) {
       Get.put<ModelDownloader>(
-        HttpModelDownloader(url: _modelUrl),
+        HttpModelDownloader(
+          url: _modelUrl,
+          version: _modelVersion,
+          manifestUrl: _modelManifestUrl,
+        ),
         permanent: true,
       );
     }

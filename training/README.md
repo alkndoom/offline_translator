@@ -62,17 +62,35 @@ Step 1 folds the adapter into the base; step 2 (the repo's existing
 
 ## 4. Ship it to the app
 
-Upload `model.gguf` to a public host and point the app at it (see the repo
-chat history / `HttpModelDownloader`):
+Upload `model.gguf` to a public host and point the app at it. For model
+versioning, also publish a tiny JSON manifest and pass its URL to the app.
 
 ```bash
 gh release create v2 ./model.gguf --repo <you>/offline-translator-models --title "model v2"
-flutter run --dart-define=MODEL_URL=https://github.com/<you>/offline-translator-models/releases/download/v2/model.gguf
+```
+
+Example `model_manifest.json`:
+
+```json
+{
+  "version": "v2",
+  "url": "https://github.com/<you>/offline-translator-models/releases/download/v2/model.gguf"
+}
+```
+
+Run the app with:
+
+```bash
+flutter run \
+  --dart-define=MODEL_MANIFEST_URL=https://raw.githubusercontent.com/<you>/offline-translator-models/main/model_manifest.json \
+  --dart-define=MODEL_URL=https://github.com/<you>/offline-translator-models/releases/download/v2/model.gguf
 ```
 
 The app's mode selector (Translate / Summarize / Simplify / Explain) now works
 end-to-end, because the model was trained on those exact prompts. **No app code
-changes** — retraining is purely a new GGUF.
+changes** — retraining is purely a new GGUF. When you publish a new model, update
+the manifest `version` and `url`; the app will replace its cached local model on
+the next model warm-up.
 
 ## Notes
 
