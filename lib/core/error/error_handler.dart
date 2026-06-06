@@ -32,6 +32,10 @@ FutureOr<void> safeExecute(
 /// The single error-presentation path: extract a human-readable message and
 /// surface it through a snackbar.
 void handleError(Object e, {StackTrace? st, String? customMessage}) {
+  // Surface the real error for debugging instead of swallowing it.
+  debugPrint('[handleError] $e');
+  if (st != null) debugPrint('$st');
+
   final message = customMessage ?? _messageFor(e);
   Get.snackbar(
     'Error',

@@ -96,15 +96,27 @@ class LlamaCppEngine implements LlmEngine {
       final id = _contextId!;
       final fllama = Fllama.instance()!;
 
-      // Apply the GGUF's built-in chat template; fall back to a plain join.
-      final prompt =
-          await fllama.getFormattedChat(
-            id,
-            messages: messages
-                .map((m) => RoleContent(role: m.role, content: m.content))
-                .toList(),
-          ) ??
-          messages.map((m) => '${m.role}: ${m.content}').join('\n');
+      // Apply the GGUF's built-in chat template. Some models (e.g. base, non
+      // -instruct checkpoints) have none, and template application throws — so
+      // fall back to a plain prompt instead of failing the whole translation.
+      String prompt;
+      try {
+        prompt =
+            await fllama.getFormattedChat(
+              id,
+              messages: messages
+                  .map((m) => RoleContent(role: m.role, content: m.content))
+                  .toList(),
+            ) ??
+            '';
+      } catch (_) {
+        prompt = '';
+      }
+      if (prompt.trim().isEmpty) {
+        prompt =
+            '${messages.map((m) => '${m.role}: ${m.content}').join('\n\n')}'
+            '\n\nassistant:';
+      }
 
       // Forward incremental tokens emitted during this completion. The token
       // stream is process-wide, so callers must not run two chats concurrently
@@ -118,12 +130,22 @@ class LlamaCppEngine implements LlmEngine {
         }
       });
 
+      // Common chat end-of-turn tokens, so generation halts cleanly even when
+      // the model's EOS isn't auto-detected (e.g. Llama-3 emits <|eot_id|>).
+      const chatStops = [
+        '<|eot_id|>',
+        '<|end_of_text|>',
+        '<|im_end|>',
+        '<end_of_turn>',
+        '<|endoftext|>',
+      ];
+
       await fllama.completion(
         id,
         prompt: prompt,
         temperature: temperature,
         nPredict: maxTokens,
-        stop: stop,
+        stop: {...stop, ...chatStops}.toList(),
         emitRealtimeCompletion: true,
       );
     }
