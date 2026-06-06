@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../../../../core/ports/llm_engine.dart';
 import '../../domain/entities/task_mode.dart';
 import '../../domain/gateways/translator_gateway.dart';
@@ -21,6 +23,7 @@ class LlmTranslatorGateway implements TranslatorGateway {
       LlmMessage.system(_systemPrompt(mode, source, target)),
       LlmMessage.user(input),
     ];
+    _debugPrintMessages(mode, messages);
 
     // Low temperature for deterministic output. Forward each token as a
     // cumulative snapshot so the UI can render the result as it streams.
@@ -33,6 +36,17 @@ class LlmTranslatorGateway implements TranslatorGateway {
       buffer.write(chunk);
       yield _clean(buffer.toString());
     }
+  }
+
+  void _debugPrintMessages(TaskMode mode, List<LlmMessage> messages) {
+    if (!kDebugMode) return;
+
+    debugPrint('--- LLM messages (${mode.actionLabel}) ---');
+    for (final message in messages) {
+      debugPrint('[${message.role}]');
+      debugPrint(message.content);
+    }
+    debugPrint('--- End LLM messages ---');
   }
 
   String _systemPrompt(TaskMode mode, String source, String target) {
