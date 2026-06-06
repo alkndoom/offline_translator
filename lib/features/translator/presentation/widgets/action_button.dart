@@ -4,17 +4,18 @@ import 'package:get/get.dart';
 import '../../../../core/design_system/index.dart';
 import '../controllers/translator_controller.dart';
 
-/// Wide primary action. Shows an inline spinner while a translation is running.
-class TranslateButton extends StatelessWidget {
-  const TranslateButton({super.key});
+/// Wide primary action whose label follows the selected task mode. Shows an
+/// inline spinner while the task is running.
+class ActionButton extends StatelessWidget {
+  const ActionButton({super.key});
 
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<TranslatorController>();
     return Obx(() {
-      final loading = controller.isLoading('translate');
+      final loading = controller.isLoading('task');
       return ElevatedButton(
-        onPressed: loading ? null : controller.translate,
+        onPressed: loading ? null : controller.runTask,
         child: loading
             ? const SizedBox(
                 height: 22,
@@ -24,7 +25,7 @@ class TranslateButton extends StatelessWidget {
                   color: AppColors.onPrimary,
                 ),
               )
-            : const Text('Translate'),
+            : Text(controller.state.taskMode.actionLabel),
       );
     });
   }

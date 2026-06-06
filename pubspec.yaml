@@ -10,8 +10,11 @@ dependencies:
   fllama: ^0.0.1
   flutter:
     sdk: flutter
+  flutter_tts: ^4.2.5
   get: ^4.7.3
   path_provider: ^2.1.5
+  shared_preferences: ^2.5.5
+  speech_to_text: ^7.4.0
 
 dev_dependencies:
   flutter_test:

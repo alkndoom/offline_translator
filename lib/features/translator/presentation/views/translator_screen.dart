@@ -4,13 +4,15 @@ import 'package:get/get.dart';
 import '../../../../core/design_system/index.dart';
 import '../controllers/translator_controller.dart';
 import '../controllers/translator_shared_state.dart';
+import '../widgets/action_button.dart';
+import '../widgets/history_sheet.dart';
 import '../widgets/input_card.dart';
 import '../widgets/language_selector.dart';
 import '../widgets/local_ai_badge.dart';
+import '../widgets/mode_selector.dart';
 import '../widgets/model_error_view.dart';
 import '../widgets/model_loading_view.dart';
 import '../widgets/output_card.dart';
-import '../widgets/translate_button.dart';
 
 /// The single translator screen. Gates the content behind the model's load
 /// status; holds no business logic.
@@ -22,7 +24,14 @@ class TranslatorScreen extends GetView<TranslatorController> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Offline Translator'),
-        actions: const [LocalAiBadge()],
+        actions: [
+          IconButton(
+            onPressed: () => HistorySheet.show(context),
+            icon: const Icon(Icons.history),
+            tooltip: 'History',
+          ),
+          const LocalAiBadge(),
+        ],
       ),
       body: SafeArea(
         child: Obx(() {
@@ -57,11 +66,13 @@ class _TranslatorBody extends StatelessWidget {
       padding: const EdgeInsets.all(AppDimensions.screenPadding),
       child: Column(
         children: const [
+          ModeSelector(),
+          SizedBox(height: AppDimensions.gapMd),
           LanguageSelector(),
           SizedBox(height: AppDimensions.gapMd),
           InputCard(),
           SizedBox(height: AppDimensions.gapLg),
-          TranslateButton(),
+          ActionButton(),
           SizedBox(height: AppDimensions.gapLg),
           OutputCard(),
         ],

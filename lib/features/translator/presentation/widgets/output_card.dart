@@ -21,13 +21,20 @@ class OutputCard extends StatelessWidget {
           children: [
             Text(controller.state.outputText, style: AppTextStyles.body),
             const SizedBox(height: AppDimensions.gapSm),
-            Align(
-              alignment: Alignment.centerRight,
-              child: IconButton(
-                onPressed: controller.copyOutput,
-                icon: const Icon(Icons.copy, color: AppColors.primary),
-                tooltip: 'Copy',
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  onPressed: controller.speakOutput,
+                  icon: const Icon(Icons.volume_up, color: AppColors.primary),
+                  tooltip: 'Speak',
+                ),
+                IconButton(
+                  onPressed: controller.copyOutput,
+                  icon: const Icon(Icons.copy, color: AppColors.primary),
+                  tooltip: 'Copy',
+                ),
+              ],
             ),
           ],
         ),

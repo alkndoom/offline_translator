@@ -1,15 +1,17 @@
-import '../entities/translation_entity.dart';
+import '../entities/task_mode.dart';
 
-/// Contract over the device-local translation capability (the local-LLM
-/// stand-in). The presentation layer programs to this interface; the concrete
-/// implementation is wired in at composition time.
+/// Contract over the device-local language model (the local-LLM stand-in). The
+/// presentation layer programs to this interface; the concrete implementation
+/// is wired in at composition time.
 abstract class TranslatorGateway {
-  /// Streams the translation as it is produced. Each emission is a cumulative
-  /// snapshot whose [TranslationEntity.translatedText] grows toward the final
-  /// result, enabling token-by-token UI.
-  Stream<TranslationEntity> translate(
-    String text,
-    String source,
-    String target,
-  );
+  /// Runs [mode] on [input]. [source]/[target] are the selected languages
+  /// (Translate goes source→target; other modes produce output in [target]).
+  /// Each emission is a cumulative snapshot of the growing output text, enabling
+  /// token-by-token UI.
+  Stream<String> run(
+    TaskMode mode,
+    String input, {
+    required String source,
+    required String target,
+  });
 }
