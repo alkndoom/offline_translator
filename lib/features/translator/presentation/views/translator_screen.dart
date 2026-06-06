@@ -25,6 +25,7 @@ class TranslatorScreen extends GetView<TranslatorController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        centerTitle: false,
         title: const Text('Offline Translator'),
         actions: [
           IconButton(
@@ -67,6 +68,7 @@ class _TranslatorBody extends StatelessWidget {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppDimensions.screenPadding),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: const [
           ModeSelector(),
           SizedBox(height: AppDimensions.gapMd),

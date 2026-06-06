@@ -19,36 +19,40 @@ class QuickPhrases extends StatelessWidget {
       final isEmergency = scenario.isEmergency;
       final accent = isEmergency ? AppColors.error : AppColors.primary;
 
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            isEmergency ? 'Emergency phrases' : 'Quick phrases',
-            style: AppTextStyles.button.copyWith(color: accent),
-          ),
-          const SizedBox(height: AppDimensions.gapSm),
-          Wrap(
-            spacing: AppDimensions.gapSm,
-            runSpacing: AppDimensions.gapSm,
-            children: [
-              for (final phrase in phrases)
-                ActionChip(
-                  label: Text(phrase.inLanguage(source.name)),
-                  onPressed: () => controller.usePhrase(phrase),
-                  labelStyle: AppTextStyles.body.copyWith(color: accent),
-                  backgroundColor: isEmergency
-                      ? AppColors.errorTint
-                      : AppColors.primaryTint,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.radiusField,
+      return SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              isEmergency ? 'Emergency phrases' : 'Quick phrases',
+              style: AppTextStyles.button.copyWith(color: accent),
+            ),
+            const SizedBox(height: AppDimensions.gapSm),
+            Wrap(
+              alignment: WrapAlignment.start,
+              spacing: AppDimensions.gapSm,
+              runSpacing: AppDimensions.gapSm,
+              children: [
+                for (final phrase in phrases)
+                  ActionChip(
+                    label: Text(phrase.inLanguage(source.name)),
+                    onPressed: () => controller.usePhrase(phrase),
+                    labelStyle: AppTextStyles.body.copyWith(color: accent),
+                    backgroundColor: isEmergency
+                        ? AppColors.errorTint
+                        : AppColors.primaryTint,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusField,
+                      ),
+                      side: BorderSide(color: accent.withValues(alpha: 0.3)),
                     ),
-                    side: BorderSide(color: accent.withValues(alpha: 0.3)),
                   ),
-                ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       );
     });
   }

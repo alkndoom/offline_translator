@@ -22,6 +22,7 @@ class ScenarioSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.find<TranslatorController>();
     return SizedBox(
+      width: double.infinity,
       height: 40,
       child: Obx(() {
         final selected = controller.state.scenario;
