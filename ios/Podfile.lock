@@ -1,0 +1,22 @@
+PODS:
+  - fllama (0.0.1):
+    - Flutter
+  - Flutter (1.0.0)
+
+DEPENDENCIES:
+  - fllama (from `.symlinks/plugins/fllama/ios`)
+  - Flutter (from `Flutter`)
+
+EXTERNAL SOURCES:
+  fllama:
+    :path: ".symlinks/plugins/fllama/ios"
+  Flutter:
+    :path: Flutter
+
+SPEC CHECKSUMS:
+  fllama: 3b57c5b47a584844e4cb82c8476237d59b8db74c
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+
+PODFILE CHECKSUM: e30f02f9d1c72c47bb6344a0a748c9d268180865
+
+COCOAPODS: 1.16.2

@@ -2,85 +2,26 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "iOS Simulator (local)",
+      "name": "iOS Simulator (github)",
       "request": "launch",
       "type": "dart",
       "program": "lib/main.dart",
       "deviceId": "E29CEAF4-9178-4261-8C16-4B4994113446",
       "flutterMode": "debug",
-      "toolArgs": ["--dart-define-from-file=config/local.json"]
+      "toolArgs": [
+        "--dart-define=MODEL_URL=https://github.com/alkndoom/offline-translator-models/releases/download/v1/model.gguf"
+      ]
     },
     {
-      "name": "iOS Simulator (dev API)",
-      "request": "launch",
-      "type": "dart",
-      "program": "lib/main.dart",
-      "deviceId": "E29CEAF4-9178-4261-8C16-4B4994113446",
-      "flutterMode": "debug",
-      "toolArgs": ["--dart-define-from-file=config/dev.json"]
-    },
-    {
-      "name": "iOS Simulator (prod API)",
-      "request": "launch",
-      "type": "dart",
-      "program": "lib/main.dart",
-      "deviceId": "E29CEAF4-9178-4261-8C16-4B4994113446",
-      "flutterMode": "release",
-      "toolArgs": ["--dart-define-from-file=config/prod.json"]
-    },
-    {
-      "name": "Android Device (local)",
+      "name": "Android Device (github)",
       "request": "launch",
       "type": "dart",
       "program": "lib/main.dart",
       "deviceId": "emulator-5554",
       "flutterMode": "debug",
-      "toolArgs": ["--dart-define-from-file=config/local.json"]
-    },
-    {
-      "name": "Android Device (dev API)",
-      "request": "launch",
-      "type": "dart",
-      "program": "lib/main.dart",
-      "deviceId": "emulator-5554",
-      "flutterMode": "debug",
-      "toolArgs": ["--dart-define-from-file=config/dev.json"]
-    },
-    {
-      "name": "Android Device (prod API)",
-      "request": "launch",
-      "type": "dart",
-      "program": "lib/main.dart",
-      "deviceId": "emulator-5554",
-      "flutterMode": "release",
-      "toolArgs": ["--dart-define-from-file=config/prod.json"]
-    },
-    {
-      "name": "Chrome Web (local)",
-      "request": "launch",
-      "type": "dart",
-      "program": "lib/main.dart",
-      "deviceId": "chrome",
-      "flutterMode": "debug",
-      "toolArgs": ["--dart-define-from-file=config/local.json"]
-    },
-    {
-      "name": "Chrome Web (dev API)",
-      "request": "launch",
-      "type": "dart",
-      "program": "lib/main.dart",
-      "deviceId": "chrome",
-      "flutterMode": "debug",
-      "toolArgs": ["--dart-define-from-file=config/dev.json"]
-    },
-    {
-      "name": "Chrome Web (prod API)",
-      "request": "launch",
-      "type": "dart",
-      "program": "lib/main.dart",
-      "deviceId": "chrome",
-      "flutterMode": "release",
-      "toolArgs": ["--dart-define-from-file=config/prod.json"]
+      "toolArgs": [
+        "--dart-define=MODEL_URL=https://github.com/alkndoom/offline-translator-models/releases/download/v1/model.gguf"
+      ]
     }
   ]
 }
